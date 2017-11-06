@@ -1,0 +1,14 @@
+#color-palette {
+    clear: both;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+  }
+  .color-button {
+    width: 14px;
+    height: 14px;
+    font-size: 0;
+    margin: 2px;
+    float: left;
+    cursor: pointer;
+    border: 2px solid  rgb(255, 255, 255);
+  }
