@@ -46,18 +46,22 @@ function setSelectedFeatureColor(color) {
 function unselectAll(){
   for (var i = 0; i < polygons.length; i++){
     map.data.overrideStyle(polygons[i].feature,{
-      editable: false
+      editable: false,
+      draggable: false
     });
   }
   selectedFeature = null;
 }
+
 function setSelected(feature) {
-  unselectAll();    
+  unselectAll();
   map.data.overrideStyle(feature, { 
-    editable: true
+    editable: true,
+    draggable: true
   });
   selectedFeature = feature;  
 }
+
 function bindDataLayerListeners(dataLayer) {
     //poligono adicionado
     dataLayer.addListener('addfeature', addPolygon);
@@ -65,20 +69,27 @@ function bindDataLayerListeners(dataLayer) {
     dataLayer.addListener('setgeometry', saveChanges);
 
     //clicar sobre o polígono o seleciona
-    map.data.addListener('click', function(event) {
+    dataLayer.addListener('click', function(event) {
       setSelected(event.feature);
       openInfoWindow(event.feature);
     });
-    
+   
     map.addListener('click', function (event) {
       unselectAll();
     });
 }
 
 function addPolygon(newPolygon) {
+   //fecha a infowindow no momento em que o usuário começar a arrastar um polígono
+   google.maps.event.addListener(newPolygon, 'dragstart', function (e) {
+    console.log('eeeee');
+    closeInfoWindow();
+  });
+
   polygons.push(newPolygon);
   saveChanges();
   setSelected(newPolygon.feature);
+  map.data.setDrawingMode(null);
 }
 
 function saveChanges() {
@@ -106,7 +117,7 @@ function loadGeoJson(map) {
 
     return ({
       editable: false,
-      draggable: true,
+      draggable: false,
       fillColor: fillColor,
       fillOpacity: fillOpacity,
       strokeColor : fillColor,
@@ -115,10 +126,14 @@ function loadGeoJson(map) {
   });
 }
 
-function openInfoWindow(feature){
+function closeInfoWindow(){
   if(infoWindow){
     infoWindow.close();
   }
+}
+
+function openInfoWindow(feature){
+  closeInfoWindow();
 
   infoWindow = new google.maps.InfoWindow({
     content: buildContent(0)
@@ -139,7 +154,6 @@ function initialize() {
   
   map.data.setControls(['Polygon','Point']);
 
-  // google.maps.event.addDomListener(document.getElementById('delete-button'), 'click', deleteSelectedShape);
   bindDataLayerListeners(map.data);
 
   //deixa a primeira cor selecionada por padrão
@@ -170,6 +184,12 @@ function initialize() {
       map.data.remove(selectedFeature);
     }
   });
+
+  //fecha qualquer infoWindow ao clicar fora dela
+  google.maps.event.addDomListener(map, 'click', function(event) {
+    closeInfoWindow();
+  });
+
 
   //load saved data
   loadGeoJson(map);
