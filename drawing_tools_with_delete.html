@@ -20,12 +20,43 @@
     </div>
     <hr>  
     <div>
-      <button id="delete-button">Delete Selected Shape</button>
+      <button id="delete-button">Excluir</button>
+    </div>
+    <hr>
+    <div id="divAndares">
+      <div id="divAndaresContainer">
+        <div class="andar">
+          <input type="radio" name="chbLayer" class="chbLayer" data-layer-name="layer1">
+          <input type="text"> <a href="#" class="excluirAndar" >x</a>
+        </div>
+        <div class="andar">
+          <input type="radio" name="chbLayer" class="chbLayer" data-layer-name="layer2" >
+          <input type="text"> <a href="#" class="excluirAndar" >x</a>
+        </div>
+        <div class="andar">
+          <input type="radio" name="chbLayer" class="chbLayer" data-layer-name="layer3" >
+          <input type="text"> <a href="#" class="excluirAndar" >x</a>
+        </div>
+      </div>
+      <button id="add-andar-button">+</button>
+    </div>
+    <br><br>
+    <div>
+      lat <input type="text" id="mapCenterLat" style="width:30%" readonly>
+      lon <input type="text" id="mapCenterLng" style="width:30%" readonly>
+      <button id="lockscreen-button" data-locked="false">lock</button>
+    </div>
+    <br>
+    <br>
+    <br>
+    <div>
+        <button id="savechanges-button">Salvar</button>
     </div>
   </div>
   <div id="map"></div>
 
   <script type="text/javascript" src="./color_palette.js"></script>
+  <script type="text/javascript" src="./andares.js"></script>
   <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false&libraries=drawing"></script>
   <script type="text/javascript" src="./page.js"></script>
 </body>
