@@ -5,7 +5,7 @@ var map;
 var polygons = [];
 var infoWindow; //garantir apenas uma infowindow
 var layers = [];
-var currentLayerName = 'geoData';
+var currentLayerId = $('.layer-radio:checked').first().data('layer-id'); //inicializa na camada com o radiobutton selecionado
 var skipsaveChangesAtLocalStorage = false;
 
 
@@ -131,13 +131,13 @@ function bindDomListeners() {
 
   
 
-  //muda de layer ao clicar no checkbox
-  var checkboxes = document.getElementsByClassName('chbLayer');
+  //muda de layer ao clicar no radio
+  var checkboxes = document.getElementsByClassName('layer-radio');
   for(var i=0; i< checkboxes.length; i++){
     google.maps.event.addDomListener(checkboxes[i], 'change', function () {
       if(this.checked) {
-        currentLayerName = this.dataset.layerName;
-        loadGeoJson(currentLayerName);
+        currentLayerId = this.dataset.layerId;
+        loadGeoJson(currentLayerId);
       } else {
         clearMap(false);
       }
@@ -190,7 +190,7 @@ function addPolygon(newPolygon) {
 function saveChangesAtLocalStorage() {
   if(!skipsaveChangesAtLocalStorage) {
     map.data.toGeoJson(function (json) {
-      localStorage.setItem(currentLayerName, JSON.stringify(json));    
+      localStorage.setItem(currentLayerId, JSON.stringify(json));    
     });
   } 
 }
@@ -266,7 +266,7 @@ function initialize() {
   map.data.setControls(['Polygon','Point']);
 
   bindDataLayerListeners(map.data);
-  bindDomListeners()
+  bindDomListeners();
 
   //deixa a primeira cor selecionada por padrão
   selectColor(colorButtons[0].style.backgroundColor);
@@ -274,7 +274,7 @@ function initialize() {
   //baixa as camadas
   downloadLayers();
 
-  // //load saved data
-  // loadGeoJson(map);
+  //load saved data
+  loadGeoJson(currentLayerId);
 }
 google.maps.event.addDomListener(window, 'load', initialize);
