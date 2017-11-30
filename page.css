@@ -26,3 +26,16 @@
   left: -3px;
   bottom: -1px;
 }
+
+/* controle de andares (ou layers) */
+
+.moveUp, .moveDown {
+  color: black;
+  text-decoration: none;
+}
+.layer-name {
+  width:50%;
+}
+a.exclude {
+  text-decoration:none;
+}

@@ -1,6 +1,9 @@
 !function ($) {
     var mapLayers = function(element, settings){
         this.baseElement = $(element);
+        this.options = settings;
+        this.generateHtml();
+
         this.layers = this.baseElement.children('.layers');
         this.rows = function () {
             return this.layers.find('.layer'); 
@@ -9,7 +12,6 @@
             return this.rows().length; 
         };
         this.addButton = $(element).find('.add-layer-button');
-        this.options = settings;
         this.initialize();
     };
 
@@ -21,19 +23,37 @@
             this.bindMoveDownEvent();
             return;
         },
+        generateHtml: function (){
+            var layersContainer = $('<div class="layers">');
+            var data = this.options.data;
+            for (var i = 0; i < data.length; ++i) {
+                var layer = $('<div class="layer">');
+
+                var moveUp = $('<a class="moveUp" href="#">&#9650;</a>');
+                var moveDown = $('<a class="moveDown" href="#" >&#9660;</a>');
+                var hiddenOrder = $('<input type="hidden" class="order" value="' + data[i].order +'">');
+                var radioButton = $('<input type="radio" name="layerRadio" class="layer-radio" data-layer-id="'+ data[i].id +'" checked>');
+                var txt = $('<input type="text" class="layer-name" tabindex="1" value="'+ data[i].name +'">');
+                var excludeButton = $('<a href="#" class="exclude" >x</a>');
+
+                $(layer).prepend(moveUp, moveDown, hiddenOrder, radioButton, txt, excludeButton);
+                $(layersContainer).prepend(layer);
+            }
+            this.baseElement.prepend(layersContainer);
+        },
         bindAddButtonEvent: function() {
             var s = this;
             s.addButton.on('click', function () {
                 var cloned = s.rows().last().clone(); //clona o html da linha
                 var radioButton = cloned.children('.layer-radio');
-                $(radioButton).attr('data-layer-id', s.newGuid()); //cria um id para a nova layer
+                $(radioButton).attr('data-layer-id', newGuid()); //cria um id para a nova layer
 
                 var textbox = cloned.children('.layer-name');
                 textbox.val('');
 
                 cloned.insertAfter(s.rows().last());
 
-                $(radioButton).trigger('click');//alterna para a nova camada
+                $(radioButton).trigger('change'); //alterna para a nova camada
             });
         },
         bindExcludeButtonEvent: function () {
@@ -75,29 +95,20 @@
             this.rows().each(function(i,v){
                 $(v).find('.order').val(i);
             });
-        },
-
-        newGuid: function () { //esse cara não é tão garantido quanto um algoritmo do .net, mas ainda é bastante improvável que ocorra duplicidade.
-            return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-                (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16))
         }
     };
 
     
     $.fn.mapLayers = function (options) {
         var defaults = {
-            data: null,
-            //maxOneChecked: false,
-            minOneRow: false,
-            sort: false,
-            addCallback: null,
-            delCallback: null
+            data: [
+                {
+                    'id': newGuid(),
+                    'name': '',
+                    'order': 0
+                }
+            ]
         };
-
-        $.fn.mapLayers.newGuid =  function () { //esse cara não é tão garantido quanto um algoritmo do .net, mas ainda é bastante improvável que ocorra duplicidade.
-            return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-                (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16))
-        }
 
         var settings = $.extend({}, defaults, options);
 
@@ -106,32 +117,3 @@
         });
     };
 }(window.jQuery);
-
-
-// var divAndares = document.getElementByClassName('layers-container')[0];
-// var qtdeLayers = divAndares.count
-
-
-
-// document.getElementById('add-andar-button').addEventListener('click', function () {
-//     var novoAndar = '<div class="andar">';
-//     novoAndar += '<input type="radio" name="layerRadio" class="layerRadio" data-layer-name="layer3" > ';
-//     novoAndar += '<input type="text" name="layers"> <a href="#" class="excluirAndar">x</a>';
-//     novoAndar += '</div>';
-
-//     divAndares.insertAdjacentHTML('beforeend', novoAndar);
-
-//     var lastElement = divAndares.lastElementChild;
-//     var checkbox = lastElement.querySelector('.layerRadio');
-//     console.log(checkbox);
-//     // checkbox.checked = true;
-//     checkbox.click();
-// });
-
-// divAndares.addEventListener('click', function (event) { 
-//     if(event.target && event.target.className == 'excluirAndar') {
-//         var parent = event.target.parentNode;
-//         parent.parentNode.removeChild(parent);
-//         //mostrar janela de confirmação
-//     }
-// });

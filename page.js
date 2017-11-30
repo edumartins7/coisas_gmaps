@@ -5,7 +5,7 @@ var map;
 var polygons = [];
 var infoWindow; //garantir apenas uma infowindow
 var layers = [];
-var currentLayerId = $('.layer-radio:checked').first().data('layer-id'); //inicializa na camada com o radiobutton selecionado
+var currentLayerId = function () { return $('.layer-radio:checked').first().data('layer-id'); }; //inicializa na camada com o radiobutton selecionado
 var skipsaveChangesAtLocalStorage = false;
 
 
@@ -99,8 +99,9 @@ function bindDataLayerListeners(dataLayer) {
 
     map.addListener('center_changed', function () {
       var mapCenter = map.getCenter();
-      document.getElementById('mapCenterLat').value = mapCenter.lat();
-      document.getElementById('mapCenterLng').value = mapCenter.lng();
+
+      $('#mapLat').text(mapCenter.lat());
+      $('#mapLng').text(mapCenter.lng());
     });
   }
 
@@ -129,20 +130,9 @@ function bindDomListeners() {
     deleteSelectedFeature();
   });
 
-  
-
-  //muda de layer ao clicar no radio
-  var checkboxes = document.getElementsByClassName('layer-radio');
-  for(var i=0; i< checkboxes.length; i++){
-    google.maps.event.addDomListener(checkboxes[i], 'change', function () {
-      if(this.checked) {
-        currentLayerId = this.dataset.layerId;
-        loadGeoJson(currentLayerId);
-      } else {
-        clearMap(false);
-      }
-    });  
-  }
+  $(document).on('change', '.layer-radio', function () {
+    loadGeoJson(currentLayerId());
+  });
 
   google.maps.event.addDomListener(document, 'keydown', function (event) {
     //pressionar delete com o objeto selecionado o exclui
@@ -156,20 +146,45 @@ function bindDomListeners() {
   });
 
   //ao clicar no botão "lock" bloqueia mover a tela e limita o zoom
-  google.maps.event.addDomListener(document.getElementById('lockscreen-button'), 'click', function () {
-    var currentZoom = map.getZoom();    
-    var locked = this.dataset.locked;
+  // google.maps.event.addDomListener(document.getElementById('lockscreen-button'), 'click', function () {
+  //   var currentZoom = map.getZoom();    
+  //   var locked = this.dataset.locked;
 
-    if (locked === 'true') {
-      this.innerHTML = 'lock';
-      this.dataset.locked = 'false';
-      map.setOptions({ draggable: true, minZoom: null, maxZoom: null });
-    } else {
-      this.innerHTML = 'unlock';
-      this.dataset.locked = 'true';
-      map.setOptions({ draggable: false, minZoom: currentZoom -3, maxZoom: currentZoom + 3 });
-    } 
+  //   if (locked === 'true') {
+  //     this.innerHTML = 'lock';
+  //     this.dataset.locked = 'false';
+  //     map.setOptions({ draggable: true, minZoom: null, maxZoom: null });
+  //   } else {
+  //     this.innerHTML = 'unlock';
+  //     this.dataset.locked = 'true';
+  //     map.setOptions({ draggable: false, minZoom: currentZoom -3, maxZoom: currentZoom + 3 });
+  //   } 
+  // });
+
+
+  google.maps.event.addDomListener(document.getElementById('center-here-button'), 'click', function () {
+    var mapCenter = map.getCenter();
+    var currentZoom = map.getZoom();    
+
+    $('#mapCenterZoom').val(currentZoom);
+    $('#mapCenterLat').val(mapCenter.lat());
+    $('#mapCenterLng').val(mapCenter.lng());
   });
+
+  google.maps.event.addDomListener(document.getElementById('center-button'), 'click', function () {
+    var lat = $('#mapCenterLat').val();
+    var lng = $('#mapCenterLng').val();
+    var zoom = parseInt($('#mapCenterZoom').val());
+
+    if(lat && lng) {
+      var center = new google.maps.LatLng(lat, lng);
+      map.panTo(center);
+    } 
+    if(zoom) {
+      map.setZoom(zoom);
+    }
+
+  });    
 }
 
 function clearMap(saveChangesAtLocalStorage) {
@@ -190,7 +205,7 @@ function addPolygon(newPolygon) {
 function saveChangesAtLocalStorage() {
   if(!skipsaveChangesAtLocalStorage) {
     map.data.toGeoJson(function (json) {
-      localStorage.setItem(currentLayerId, JSON.stringify(json));    
+      localStorage.setItem(currentLayerId(), JSON.stringify(json));    
     });
   } 
 }
@@ -256,8 +271,8 @@ function openInfoWindow(feature){
 
 function initialize() {
   map = new google.maps.Map(document.getElementById('map'), {
-    zoom: 10,
-    center: new google.maps.LatLng(22.344, 114.048),
+    zoom: 18,
+    center: new google.maps.LatLng(-23.621384594886123, 313.3008238892556),
     mapTypeId: google.maps.MapTypeId.ROADMAP,
     disableDefaultUI: true,
     zoomControl: true
@@ -275,6 +290,6 @@ function initialize() {
   downloadLayers();
 
   //load saved data
-  loadGeoJson(currentLayerId);
+  loadGeoJson(currentLayerId());
 }
 google.maps.event.addDomListener(window, 'load', initialize);
