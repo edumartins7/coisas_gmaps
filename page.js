@@ -269,17 +269,125 @@ function openInfoWindow(feature){
   infoWindow.open(map);
 }
 
+
+function initAutocomplete(){
+  // Create the search box and link it to the UI element.
+  var input = document.getElementById('pac-input');
+  var searchBox = new google.maps.places.SearchBox(input);
+  map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+
+  // Bias the SearchBox results towards current map's viewport.
+  map.addListener('bounds_changed', function() {
+    searchBox.setBounds(map.getBounds());
+  });
+
+  var markers = [];
+  // Listen for the event fired when the user selects a prediction and retrieve
+  // more details for that place.
+  searchBox.addListener('places_changed', function() {
+    var places = searchBox.getPlaces();
+
+    if (places.length == 0) {
+      return;
+    }
+
+    // Clear out the old markers.
+    markers.forEach(function(marker) {
+      marker.setMap(null);
+    });
+    markers = [];
+
+    // For each place, get the icon, name and location.
+    var bounds = new google.maps.LatLngBounds();
+    places.forEach(function(place) {
+      if (!place.geometry) {
+        console.log("Returned place contains no geometry");
+        return;
+      }
+     
+      if (place.geometry.viewport) {
+        // Only geocodes have viewport.
+        bounds.union(place.geometry.viewport);
+      } else {
+        bounds.extend(place.geometry.location);
+      }
+    });
+    map.fitBounds(bounds);
+    map.setZoom(19);
+  });
+}
+
+ /**
+ * The CenterControl adds a control to the map that recenters the map on
+ * Chicago.
+ * This constructor takes the control DIV as an argument.
+ * @constructor
+ */
+function CenterControl(controlDiv, map) {
+  // Set CSS for the control border.
+  var controlUI = document.createElement('div');
+  controlUI.style.backgroundColor = '#fff';
+  controlUI.style.border = '2px solid #fff';
+  controlUI.style.borderRadius = '3px';
+  controlUI.style.boxShadow = '0 2px 6px rgba(0,0,0,.3)';
+  controlUI.style.cursor = 'pointer';
+  controlUI.style.marginBottom = '22px';
+  controlUI.style.textAlign = 'center';
+  controlUI.title = 'Click to recenter the map';
+  controlDiv.appendChild(controlUI);
+
+  // Set CSS for the control interior.
+  var controlText = document.createElement('div');
+  controlText.style.color = 'rgb(25,25,25)';
+  controlText.style.fontFamily = 'Roboto,Arial,sans-serif';
+  controlText.style.fontSize = '16px';
+  controlText.style.lineHeight = '38px';
+  controlText.style.paddingLeft = '5px';
+  controlText.style.paddingRight = '5px';
+  controlText.innerHTML = 'Voltar para o shopping';
+  controlUI.appendChild(controlText);
+
+  // Setup the click event listeners: simply set the map to Chicago.
+  controlUI.addEventListener('click', function() {
+    var lat = $('#mapCenterLat').val();
+    var lng = $('#mapCenterLng').val();
+    var zoom = parseInt($('#mapCenterZoom').val());
+
+    if(lat && lng) {
+      var center = new google.maps.LatLng(lat, lng);
+      map.panTo(center);
+    } 
+    if(zoom) {
+      map.setZoom(zoom);
+    }
+  });
+
+}
+        
+
 function initialize() {
+  
   map = new google.maps.Map(document.getElementById('map'), {
     zoom: 18,
     center: new google.maps.LatLng(-23.621384594886123, 313.3008238892556),
     mapTypeId: google.maps.MapTypeId.ROADMAP,
     disableDefaultUI: true,
-    zoomControl: true
+    zoomControl: true,
   });
-  
   map.data.setControls(['Polygon','Point']);
+  map.data.setControlPosition(google.maps.ControlPosition.TOP_CENTER);
+  
+    // Create the DIV to hold the control and call the CenterControl()
+    // constructor passing in this DIV.
+    var centerControlDiv = document.createElement('div');
+    var centerControl = new CenterControl(centerControlDiv, map);
 
+    centerControlDiv.index = 1;
+    map.controls[google.maps.ControlPosition.LEFT_CENTER].push(centerControlDiv);
+
+
+  initAutocomplete();
+  
   bindDataLayerListeners(map.data);
   bindDomListeners();
 
@@ -287,7 +395,7 @@ function initialize() {
   selectColor(colorButtons[0].style.backgroundColor);
 
   //baixa as camadas
-  downloadLayers();
+  // downloadLayers();
 
   //load saved data
   loadGeoJson(currentLayerId());
