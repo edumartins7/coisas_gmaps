@@ -7,6 +7,120 @@ var infoWindow; //garantir apenas uma infowindow
 var layers = [];
 var currentLayerId = function () { return $('.layer-radio:checked').first().data('layer-id'); }; //inicializa na camada com o radiobutton selecionado
 var skipsaveChangesAtLocalStorage = false;
+var shoppingLat;
+var shoppingLng;
+var goToCenterControlDiv;
+var setCenterControlDiv;
+var mapCenterZoom;
+
+
+//#region AAA
+
+function GoToCenterControl(controlDiv, map) {
+  // Set CSS for the control border.
+  var controlUI = document.createElement('div');
+  controlUI.style.backgroundColor = '#fff';
+  controlUI.style.border = '2px solid #fff';
+  controlUI.style.borderRadius = '3px';
+  controlUI.style.boxShadow = '0 0 15px rgba(0,0,0,.9)';
+  controlUI.style.cursor = 'pointer';
+  controlUI.style.marginBottom = '150px';
+  controlUI.style.textAlign = 'center';
+
+
+  controlUI.style.backgroundColor = 'rgb(57, 73, 171)';    
+  controlUI.title = 'Clique para centralizar';
+  controlDiv.appendChild(controlUI);
+
+  // Set CSS for the control interior.
+  var controlText = document.createElement('div');
+  controlText.style.color = 'white';
+  controlText.style.fontFamily = 'Roboto,Arial,sans-serif';
+  controlText.style.fontSize = '16px';
+  controlText.style.lineHeight = '28px';
+  controlText.style.paddingLeft = '40px';
+  controlText.style.paddingRight = '40px'
+  controlText.innerHTML = '&#171';
+  controlUI.appendChild(controlText);
+
+  //Setup the click event listeners: simply set the map to Chicago.
+  controlUI.addEventListener('click', function() {
+
+    if(shoppingLat && shoppingLng) {
+      var center = new google.maps.LatLng(shoppingLat, shoppingLng);
+      map.setCenter(center);
+    
+      goToCenterControlDiv.style["display"] = "none";
+      goToCenterControlDiv.style.left = '390px';
+      setCenterControlDiv.style["display"] = "none";
+      map.setZoom(mapCenterZoom);
+    }
+  });
+}
+
+function addGoToCenterControl(map, index, position) {
+  goToCenterControlDiv = document.createElement('div');
+  goToCenterControlDiv.index = index;
+  
+  var centerControl = new GoToCenterControl(goToCenterControlDiv, map);
+
+  map.controls[position].push(goToCenterControlDiv);
+}
+
+
+function SetCenterControl(controlDiv, map) {
+  // Set CSS for the control border.
+  var controlUI = document.createElement('div');
+  controlUI.style.backgroundColor = '#fff';
+  controlUI.style.border = '2px solid #fff';
+  controlUI.style.borderRadius = '3px';
+  controlUI.style.boxShadow = '0 0 15px rgba(0,0,0,.9)';
+  controlUI.style.cursor = 'pointer';
+  controlUI.style.marginBottom = '150px';
+  controlUI.style.marginLeft = '100px';
+  
+  controlUI.style.textAlign = 'center';
+  controlUI.style.backgroundColor = 'rgb(251, 192, 45)';  
+  controlUI.title = 'Clique para fixar a tela nessa posição';
+  controlDiv.appendChild(controlUI);
+  
+  // Set CSS for the control interior.
+  var controlText = document.createElement('div');
+  controlText.style.color = 'white';
+  controlText.style.fontFamily = 'Roboto,Arial,sans-serif';
+  controlText.style.fontSize = '16px';
+  controlText.style.lineHeight = '28px';
+  controlText.style.paddingLeft = '40px';
+  controlText.style.paddingRight = '40px'
+  controlText.innerHTML = 'F';
+  controlUI.appendChild(controlText);
+
+  //Setup the click event listeners: simply set the map to Chicago.
+  controlUI.addEventListener('click', function() {
+    var mapCenter = map.getCenter();
+    var currentZoom = map.getZoom();    
+
+    mapCenterZoom = currentZoom;
+    shoppingLat = mapCenter.lat();
+    shoppingLng = mapCenter.lng();
+
+    goToCenterControlDiv.style["display"] = "none";
+    setCenterControlDiv.style["display"] = "none";
+  });
+}
+
+function addSetCenterControl(map, index, position) {
+  setCenterControlDiv = document.createElement('div');
+  setCenterControlDiv.index = index;
+  
+  var centerControl = new SetCenterControl(setCenterControlDiv, map);
+
+  map.controls[position].push(setCenterControlDiv);
+}
+
+
+//#endregion
+
 
 
 function buildContent(descriptionId){
@@ -24,7 +138,7 @@ function buildContent(descriptionId){
 
   var contentString = '<div id="content">'+
   '<div id="siteNotice">'+
-  '</div>'+
+  '</div>' +
   '<h1 id="firstHeading" class="firstHeading">' + tit + '</h1>'+
   '<div id="bodyContent">'+
   bd +  
@@ -55,14 +169,12 @@ function unselectAll(){
   }
   selectedFeature = null;
 }
-
 function deleteSelectedFeature() {
   if(selectedFeature){
     map.data.remove(selectedFeature);
     closeInfoWindow();
   }
 }
-
 function setSelected(feature) {
   unselectAll();
   map.data.overrideStyle(feature, { 
@@ -96,12 +208,41 @@ function bindDataLayerListeners(dataLayer) {
     });
 
     //ao mover o centro do mapa atualiza os textboxes do painel
-
     map.addListener('center_changed', function () {
       var mapCenter = map.getCenter();
 
-      $('#mapLat').text(mapCenter.lat());
-      $('#mapLng').text(mapCenter.lng());
+      var currentLat = mapCenter.lat();
+      var currentLng = mapCenter.lng();
+
+      $('#mapLat').text(currentLat);
+      $('#mapLng').text(currentLng);
+
+
+      console.log("sLat: " + shoppingLat + " sLng: " + shoppingLng + " currentLat: " + currentLat + " currentLng: " + currentLng );
+
+      if(!shoppingLat || !shoppingLng) {
+        console.log('a');
+        goToCenterControlDiv.style["display"] = "none";
+        setCenterControlDiv.style["display"] = "inline";          
+        console.log('aa');      
+      } else if (shoppingLat == currentLat && shoppingLng == currentLng) {
+        console.log('b');
+        
+        goToCenterControlDiv.style["display"] = "none";
+        setCenterControlDiv.style["display"] = "none";
+
+      } else {
+        var a = goToCenterControlDiv.style["display"];
+        var b = setCenterControlDiv.style["display"];
+
+        if(a != "inline" && b != "inline"){
+          console.log('c');
+          goToCenterControlDiv.style["display"] = "inline";
+          setCenterControlDiv.style["display"] = "inline";
+          goToCenterControlDiv.style.left = '390px';
+          
+        }
+      }
     });
   }
 
@@ -162,29 +303,6 @@ function bindDomListeners() {
   // });
 
 
-  google.maps.event.addDomListener(document.getElementById('center-here-button'), 'click', function () {
-    var mapCenter = map.getCenter();
-    var currentZoom = map.getZoom();    
-
-    $('#mapCenterZoom').val(currentZoom);
-    $('#mapCenterLat').val(mapCenter.lat());
-    $('#mapCenterLng').val(mapCenter.lng());
-  });
-
-  google.maps.event.addDomListener(document.getElementById('center-button'), 'click', function () {
-    var lat = $('#mapCenterLat').val();
-    var lng = $('#mapCenterLng').val();
-    var zoom = parseInt($('#mapCenterZoom').val());
-
-    if(lat && lng) {
-      var center = new google.maps.LatLng(lat, lng);
-      map.panTo(center);
-    } 
-    if(zoom) {
-      map.setZoom(zoom);
-    }
-
-  });    
 }
 
 function clearMap(saveChangesAtLocalStorage) {
@@ -317,75 +435,24 @@ function initAutocomplete(){
   });
 }
 
- /**
- * The CenterControl adds a control to the map that recenters the map on
- * Chicago.
- * This constructor takes the control DIV as an argument.
- * @constructor
- */
-function CenterControl(controlDiv, map) {
-  // Set CSS for the control border.
-  var controlUI = document.createElement('div');
-  controlUI.style.backgroundColor = '#fff';
-  controlUI.style.border = '2px solid #fff';
-  controlUI.style.borderRadius = '3px';
-  controlUI.style.boxShadow = '0 2px 6px rgba(0,0,0,.3)';
-  controlUI.style.cursor = 'pointer';
-  controlUI.style.marginBottom = '22px';
-  controlUI.style.textAlign = 'center';
-  controlUI.title = 'Click to recenter the map';
-  controlDiv.appendChild(controlUI);
-
-  // Set CSS for the control interior.
-  var controlText = document.createElement('div');
-  controlText.style.color = 'rgb(25,25,25)';
-  controlText.style.fontFamily = 'Roboto,Arial,sans-serif';
-  controlText.style.fontSize = '16px';
-  controlText.style.lineHeight = '38px';
-  controlText.style.paddingLeft = '5px';
-  controlText.style.paddingRight = '5px';
-  controlText.innerHTML = 'Voltar para o shopping';
-  controlUI.appendChild(controlText);
-
-  // Setup the click event listeners: simply set the map to Chicago.
-  controlUI.addEventListener('click', function() {
-    var lat = $('#mapCenterLat').val();
-    var lng = $('#mapCenterLng').val();
-    var zoom = parseInt($('#mapCenterZoom').val());
-
-    if(lat && lng) {
-      var center = new google.maps.LatLng(lat, lng);
-      map.panTo(center);
-    } 
-    if(zoom) {
-      map.setZoom(zoom);
-    }
-  });
-
-}
         
-
 function initialize() {
-  
+
   map = new google.maps.Map(document.getElementById('map'), {
     zoom: 18,
     center: new google.maps.LatLng(-23.621384594886123, 313.3008238892556),
     mapTypeId: google.maps.MapTypeId.ROADMAP,
     disableDefaultUI: true,
     zoomControl: true,
+    rotateControl: true
   });
+
   map.data.setControls(['Polygon','Point']);
   map.data.setControlPosition(google.maps.ControlPosition.TOP_CENTER);
   
-    // Create the DIV to hold the control and call the CenterControl()
-    // constructor passing in this DIV.
-    var centerControlDiv = document.createElement('div');
-    var centerControl = new CenterControl(centerControlDiv, map);
-
-    centerControlDiv.index = 1;
-    map.controls[google.maps.ControlPosition.LEFT_CENTER].push(centerControlDiv);
-
-
+  addGoToCenterControl(map, 1, google.maps.ControlPosition.BOTTOM_CENTER);
+  addSetCenterControl(map, 2, google.maps.ControlPosition.BOTTOM_CENTER);
+  
   initAutocomplete();
   
   bindDataLayerListeners(map.data);
@@ -400,4 +467,5 @@ function initialize() {
   //load saved data
   loadGeoJson(currentLayerId());
 }
+
 google.maps.event.addDomListener(window, 'load', initialize);
