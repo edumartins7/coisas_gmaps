@@ -12,6 +12,7 @@ var shoppingLng;
 var goToCenterControlDiv;
 var setCenterControlDiv;
 var mapCenterZoom;
+var remoteData;
 
 
 //#region AAA
@@ -24,7 +25,7 @@ function GoToCenterControl(controlDiv, map) {
   controlUI.style.borderRadius = '3px';
   controlUI.style.boxShadow = '0 0 15px rgba(0,0,0,.9)';
   controlUI.style.cursor = 'pointer';
-  controlUI.style.marginBottom = '150px';
+  controlUI.style.marginBottom = '100px';
   controlUI.style.textAlign = 'center';
 
 
@@ -76,7 +77,7 @@ function SetCenterControl(controlDiv, map) {
   controlUI.style.borderRadius = '3px';
   controlUI.style.boxShadow = '0 0 15px rgba(0,0,0,.9)';
   controlUI.style.cursor = 'pointer';
-  controlUI.style.marginBottom = '150px';
+  controlUI.style.marginBottom = '100px';
   controlUI.style.marginLeft = '100px';
   
   controlUI.style.textAlign = 'center';
@@ -122,27 +123,46 @@ function addSetCenterControl(map, index, position) {
 //#endregion
 
 
+function getFeatureArea(feature) {
+  if (feature.getGeometry().getType() == "Polygon") {
+      var bounds=[];
+      feature.getGeometry().forEachLatLng(function(path) {
+        bounds.push(path);
+      });
+      var area = (Math.round(google.maps.geometry.spherical.computeArea(bounds) * 100) / 100).toFixed(2);
+
+      var areaStr = area.toString().replace('.', ',') + ' m2';
+      return areaStr;
+  }
+}
+
 
 function buildContent(descriptionId){
-  
-  //vem de uma chamada ajax
-  var bd = '<p><b>Uluru</b>, also referred to as <b>Ayers Rock</b>, is a large ' +
-  'sandstone rock formation in the southern part of the '+
-  'Northern Territory, central Australia. It lies 335&#160;km (208&#160;mi) '+
-  'rock caves and ancient paintings. Uluru is listed as a World '+
-  'Heritage Site.</p>'+
-  '<p>Attribution: Uluru, <a href="https://en.wikipedia.org/w/index.php?title=Uluru&oldid=297882194">'+
-  'https://en.wikipedia.org/w/index.php?title=Uluru</a> '+
-  '(last visited June 22, 2009).</p>';
-  var tit = "Ulurururu";
 
+
+  //vem de uma chamada ajax
+  var areaData = {
+    title: 'Propriedade XPTO',
+    imageUrl: '',
+    contentHtml: '<p><b>Uluru</b>, also referred to as <b>Ayers Rock</b>, is a large ' +
+    'sandstone rock formation in the southern part of the '+
+    'Northern Territory, central Australia. It lies 335&#160;km (208&#160;mi) '+
+    'rock caves and ancient paintings. Uluru is listed as a World '+
+    'Heritage Site.</p>'
+  }
+  
+  
   var contentString = '<div id="content">'+
   '<div id="siteNotice">'+
   '</div>' +
-  '<h1 id="firstHeading" class="firstHeading">' + tit + '</h1>'+
+  '<h1 id="firstHeading" class="firstHeading">' + areaData.title + '</h1>'+
   '<div id="bodyContent">'+
-  bd +  
+  areaData.contentHtml +  
   '</div>'+
+  '<ul class="toolbar">' + 
+  '<li><a href="#"><i class="fa fa-user"></i></a></li>' + 
+  '<li><a href="#"><i class="fa fa-paint-brush"></i></a></li>' + 
+  + '</ul>' +
   '</div>';
 
   return contentString;
@@ -198,6 +218,7 @@ function bindDataLayerListeners(dataLayer) {
     //clicar sobre o polígono o seleciona
     dataLayer.addListener('click', function(event) {
       setSelected(event.feature);
+      getFeatureArea(event.feature);
       openInfoWindow(event.feature);
     });
   
@@ -217,26 +238,16 @@ function bindDataLayerListeners(dataLayer) {
       $('#mapLat').text(currentLat);
       $('#mapLng').text(currentLng);
 
-
-      console.log("sLat: " + shoppingLat + " sLng: " + shoppingLng + " currentLat: " + currentLat + " currentLng: " + currentLng );
-
       if(!shoppingLat || !shoppingLng) {
-        console.log('a');
         goToCenterControlDiv.style["display"] = "none";
         setCenterControlDiv.style["display"] = "inline";          
-        console.log('aa');      
       } else if (shoppingLat == currentLat && shoppingLng == currentLng) {
-        console.log('b');
-        
         goToCenterControlDiv.style["display"] = "none";
         setCenterControlDiv.style["display"] = "none";
-
       } else {
         var a = goToCenterControlDiv.style["display"];
         var b = setCenterControlDiv.style["display"];
-
         if(a != "inline" && b != "inline"){
-          console.log('c');
           goToCenterControlDiv.style["display"] = "inline";
           setCenterControlDiv.style["display"] = "inline";
           goToCenterControlDiv.style.left = '390px';
@@ -247,7 +258,42 @@ function bindDataLayerListeners(dataLayer) {
   }
 
 function bindDomListeners() {
-  //uma cor é clicada
+  //salva as alterações remotamente
+  google.maps.event.addDomListener(document.getElementById('savechanges-button'), 'click', function () {
+    var layers = $('.layers').find('.layer');
+    
+    var dataToPersist = {
+      mapZoom: mapCenterZoom,
+      mapCenterLat: shoppingLat,
+      mapCenterLng: shoppingLng
+    };
+
+    var l = [];
+
+    for (var i = 0; i < layers.length; i++) {
+      var id = $(layers[i]).children('.layer-radio').data('layer-id');    
+      var name = $(layers[i]).children('.layer-name').val();
+      var order = $(layers[i]).children('.order').val();
+  
+      var geoJson = localStorage.getItem(id.toString());
+  
+      var data = {
+        'id': id,
+        'name': name,
+        'order': order,
+        'geoJson': geoJson
+      }
+  
+      l.push(data);
+    }
+
+    dataToPersist.layers = l;
+  
+    localStorage.setItem("remoteDataAndStuff", JSON.stringify(dataToPersist)); 
+    console.log("salvo com sucesso!");
+  });
+  
+  //#region uma cor é clicada
   for(var i=0; i< colorButtons.length; i++){
     google.maps.event.addDomListener(colorButtons[i], 'click', function() {
       selectedColor = this.style.backgroundColor;
@@ -284,25 +330,8 @@ function bindDomListeners() {
     else if(event.keyCode == 27) {
       map.data.setDrawingMode(null);        
     }
+    
   });
-
-  //ao clicar no botão "lock" bloqueia mover a tela e limita o zoom
-  // google.maps.event.addDomListener(document.getElementById('lockscreen-button'), 'click', function () {
-  //   var currentZoom = map.getZoom();    
-  //   var locked = this.dataset.locked;
-
-  //   if (locked === 'true') {
-  //     this.innerHTML = 'lock';
-  //     this.dataset.locked = 'false';
-  //     map.setOptions({ draggable: true, minZoom: null, maxZoom: null });
-  //   } else {
-  //     this.innerHTML = 'unlock';
-  //     this.dataset.locked = 'true';
-  //     map.setOptions({ draggable: false, minZoom: currentZoom -3, maxZoom: currentZoom + 3 });
-  //   } 
-  // });
-
-
 }
 
 function clearMap(saveChangesAtLocalStorage) {
@@ -328,15 +357,13 @@ function saveChangesAtLocalStorage() {
   } 
 }
 
-function downloadLayers(){
-  var request = new XMLHttpRequest();
-  request.open("GET", "layer1.json", false);
-  request.send(null);
-  request.onreadystatechange = function() {
-    if ( request.readyState === 4 && request.status === 200 ) {
-      var my_JSON_object = request.responseText;
-      console.log(my_JSON_object);
-    }
+function downloadAndSetUpStuff() {
+  remoteData = JSON.parse(localStorage.getItem("remoteDataAndStuff"));
+
+  if(remoteData){
+    $('.layers-container').mapLayers({ data: remoteData.layers }); //esse cara já é compatível com as opçãoes do plugin    
+  } else {
+    $('.layers-container').mapLayers();
   }
 }
 
@@ -380,7 +407,8 @@ function openInfoWindow(feature){
   closeInfoWindow();
 
   infoWindow = new google.maps.InfoWindow({
-    content: buildContent(0)
+    content: buildContent(0),
+    maxWidth: 350
   });
 
   infoWindow.setPosition(feature.getGeometry().getAt(0).getAt(0));
@@ -392,7 +420,7 @@ function initAutocomplete(){
   // Create the search box and link it to the UI element.
   var input = document.getElementById('pac-input');
   var searchBox = new google.maps.places.SearchBox(input);
-  map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+  map.controls[google.maps.ControlPosition.TOP_RIGHT].push(input);
 
   // Bias the SearchBox results towards current map's viewport.
   map.addListener('bounds_changed', function() {
@@ -437,16 +465,44 @@ function initAutocomplete(){
 
         
 function initialize() {
-
+  downloadAndSetUpStuff();
+  
   map = new google.maps.Map(document.getElementById('map'), {
-    zoom: 18,
-    center: new google.maps.LatLng(-23.621384594886123, 313.3008238892556),
+    zoom: remoteData ? remoteData.mapZoom : 11,
+    center: remoteData ? new google.maps.LatLng(-23.58178377021971, -46.532846965312885) : new google.maps.LatLng(-23.58178377021971, -46.532846965312885),
     mapTypeId: google.maps.MapTypeId.ROADMAP,
     disableDefaultUI: true,
     zoomControl: true,
-    rotateControl: true
+    rotateControl: true,
+    styles: [
+      {
+        "elementType": "labels",
+        "stylers": [
+          {
+            "visibility": "off"
+          }
+        ]
+      },
+      {
+        "featureType": "administrative.neighborhood",
+        "stylers": [
+          {
+            "visibility": "off"
+          }
+        ]
+      },
+      {
+        "featureType": "road",
+        "elementType": "labels.text",
+        "stylers": [
+          {
+            "visibility": "on"
+          }
+        ]
+      }
+    ]
   });
-
+  map.setTilt(45);
   map.data.setControls(['Polygon','Point']);
   map.data.setControlPosition(google.maps.ControlPosition.TOP_CENTER);
   

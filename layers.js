@@ -54,6 +54,7 @@
                 cloned.insertAfter(s.rows().last());
 
                 $(radioButton).trigger('change'); //alterna para a nova camada
+                s.fixOrder();               
             });
         },
         bindExcludeButtonEvent: function () {
@@ -71,6 +72,7 @@
                 }
                 
                 parent.parentNode.removeChild(parent);
+                s.fixOrder();               
             });
         },
         bindMoveUpEvent: function() {
